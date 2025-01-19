@@ -20256,14 +20256,32 @@
       "isResource": false,
       "long_name": "gayming::Player",
       "properties": {
+        "air_speed": {
+          "type": {
+            "$ref": "#/$defs/f32"
+          }
+        },
+        "jump_height": {
+          "type": {
+            "$ref": "#/$defs/f32"
+          }
+        },
         "speed": {
           "type": {
             "$ref": "#/$defs/f32"
           }
+        },
+        "was_moving": {
+          "type": {
+            "$ref": "#/$defs/bool"
+          }
         }
       },
       "required": [
-        "speed"
+        "speed",
+        "air_speed",
+        "jump_height",
+        "was_moving"
       ],
       "short_name": "Player",
       "type": "object",
