@@ -7,4 +7,5 @@ edition = "2024"
 avian3d = { version = "0.2.0", features = ["enhanced-determinism"] }
 bevy = { version = "0.15.1", features = ["wayland"] }
 bevy-inspector-egui = "0.28.1"
+bevy_egui = "0.31.0"
 blenvy = { git="https://github.com/jwright159/Blenvy.git" }

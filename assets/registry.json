@@ -7311,6 +7311,11 @@
       "isResource": false,
       "long_name": "bevy_egui::EguiSettings",
       "properties": {
+        "default_open_url_target": {
+          "type": {
+            "$ref": "#/$defs/core::option::Option<alloc::string::String>"
+          }
+        },
         "run_manually": {
           "type": {
             "$ref": "#/$defs/bool"
@@ -20239,51 +20244,92 @@
       "type": "float",
       "typeInfo": "Value"
     },
-    "gayming::GroundDetectionRay": {
+    "gayming::player_controller::Player": {
       "additionalProperties": false,
       "isComponent": true,
       "isResource": false,
-      "long_name": "gayming::GroundDetectionRay",
-      "properties": {},
-      "required": [],
-      "short_name": "GroundDetectionRay",
-      "type": "object",
-      "typeInfo": "Struct"
-    },
-    "gayming::Player": {
-      "additionalProperties": false,
-      "isComponent": true,
-      "isResource": false,
-      "long_name": "gayming::Player",
+      "long_name": "gayming::player_controller::Player",
       "properties": {
-        "air_speed": {
+        "camera_distance": {
           "type": {
             "$ref": "#/$defs/f32"
           }
         },
-        "jump_height": {
+        "camera_scroll_sensitivity": {
           "type": {
             "$ref": "#/$defs/f32"
           }
         },
-        "speed": {
+        "camera_sensitivity": {
           "type": {
             "$ref": "#/$defs/f32"
           }
         },
-        "was_moving": {
+        "collider_height": {
           "type": {
-            "$ref": "#/$defs/bool"
+            "$ref": "#/$defs/f32"
+          }
+        },
+        "collider_radius": {
+          "type": {
+            "$ref": "#/$defs/f32"
+          }
+        },
+        "float_height": {
+          "type": {
+            "$ref": "#/$defs/f32"
+          }
+        },
+        "grounded_speed": {
+          "type": {
+            "$ref": "#/$defs/f32"
+          }
+        },
+        "spring_damping": {
+          "type": {
+            "$ref": "#/$defs/f32"
+          }
+        },
+        "spring_strength": {
+          "type": {
+            "$ref": "#/$defs/f32"
           }
         }
       },
       "required": [
-        "speed",
-        "air_speed",
-        "jump_height",
-        "was_moving"
+        "collider_radius",
+        "collider_height",
+        "float_height",
+        "spring_strength",
+        "spring_damping",
+        "camera_sensitivity",
+        "camera_scroll_sensitivity",
+        "camera_distance",
+        "grounded_speed"
       ],
       "short_name": "Player",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
+    "gayming::player_controller::PlayerCamera": {
+      "additionalProperties": false,
+      "isComponent": true,
+      "isResource": false,
+      "long_name": "gayming::player_controller::PlayerCamera",
+      "properties": {},
+      "required": [],
+      "short_name": "PlayerCamera",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
+    "gayming::player_controller::PlayerCameraCenter": {
+      "additionalProperties": false,
+      "isComponent": true,
+      "isResource": false,
+      "long_name": "gayming::player_controller::PlayerCameraCenter",
+      "properties": {},
+      "required": [],
+      "short_name": "PlayerCameraCenter",
       "type": "object",
       "typeInfo": "Struct"
     },
