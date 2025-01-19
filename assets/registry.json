@@ -20244,27 +20244,12 @@
       "type": "float",
       "typeInfo": "Value"
     },
-    "gayming::player_controller::Player": {
+    "gayming::player_controller::components::Player": {
       "additionalProperties": false,
       "isComponent": true,
       "isResource": false,
-      "long_name": "gayming::player_controller::Player",
+      "long_name": "gayming::player_controller::components::Player",
       "properties": {
-        "camera_distance": {
-          "type": {
-            "$ref": "#/$defs/f32"
-          }
-        },
-        "camera_scroll_sensitivity": {
-          "type": {
-            "$ref": "#/$defs/f32"
-          }
-        },
-        "camera_sensitivity": {
-          "type": {
-            "$ref": "#/$defs/f32"
-          }
-        },
         "collider_height": {
           "type": {
             "$ref": "#/$defs/f32"
@@ -20280,7 +20265,7 @@
             "$ref": "#/$defs/f32"
           }
         },
-        "grounded_speed": {
+        "max_slope": {
           "type": {
             "$ref": "#/$defs/f32"
           }
@@ -20297,39 +20282,14 @@
         }
       },
       "required": [
-        "collider_radius",
         "collider_height",
+        "collider_radius",
+        "max_slope",
         "float_height",
         "spring_strength",
-        "spring_damping",
-        "camera_sensitivity",
-        "camera_scroll_sensitivity",
-        "camera_distance",
-        "grounded_speed"
+        "spring_damping"
       ],
       "short_name": "Player",
-      "type": "object",
-      "typeInfo": "Struct"
-    },
-    "gayming::player_controller::PlayerCamera": {
-      "additionalProperties": false,
-      "isComponent": true,
-      "isResource": false,
-      "long_name": "gayming::player_controller::PlayerCamera",
-      "properties": {},
-      "required": [],
-      "short_name": "PlayerCamera",
-      "type": "object",
-      "typeInfo": "Struct"
-    },
-    "gayming::player_controller::PlayerCameraCenter": {
-      "additionalProperties": false,
-      "isComponent": true,
-      "isResource": false,
-      "long_name": "gayming::player_controller::PlayerCameraCenter",
-      "properties": {},
-      "required": [],
-      "short_name": "PlayerCameraCenter",
       "type": "object",
       "typeInfo": "Struct"
     },
