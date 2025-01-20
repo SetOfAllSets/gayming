@@ -9,7 +9,8 @@ use bevy::prelude::*;
     Collider,
     ShapeCaster,
     LockedAxes,
-    ExternalForce
+    ExternalForce,
+    GravityScale
 )]
 pub struct Player {
     pub collider_height: f32,
@@ -44,6 +45,8 @@ impl Default for Player {
 pub struct PlayerData {
     pub grounded: GroundedState,
     pub ground_distance: Option<f32>,
+    pub ground_height: Option<f32>,
+    pub ground_normal: Option<Dir3>,
 }
 
 impl Default for PlayerData {
@@ -51,6 +54,8 @@ impl Default for PlayerData {
         PlayerData {
             grounded: GroundedState::Ungrounded(UngroundedReason::Airborne),
             ground_distance: None,
+            ground_height: None,
+            ground_normal: None,
         }
     }
 }
@@ -64,5 +69,5 @@ pub enum GroundedState {
 #[derive(Reflect, Debug, PartialEq)]
 pub enum UngroundedReason {
     Airborne,
-    SteepSlope(Dir3),
+    SteepSlope,
 }

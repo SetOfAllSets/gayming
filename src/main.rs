@@ -7,8 +7,8 @@ use blueprints::spawn_from_blueprints::{
 };
 use mesh_markers::MeshMarkerPlugin;
 use player_controller::PlayerControllerPlugin;
-mod player_controller;
 mod mesh_markers;
+mod player_controller;
 
 fn main() -> AppExit {
     App::new()

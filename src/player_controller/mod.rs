@@ -37,20 +37,14 @@ fn setup(world: &mut World) {
             world.commands().entity(entity).insert({
                 let rigid_body = RigidBody::Dynamic;
                 let collider = Collider::capsule(player.collider_radius, player.collider_height);
-                let mut shape_caster_origin = Vec3::ZERO;
-                shape_caster_origin.y -= player.collider_height / 2.0;
-                let mut ray_caster_origin = Vec3::ZERO;
-                ray_caster_origin.y -= player.collider_height / 2.0 + player.collider_radius;
+                let shape_caster_origin = Vec3::ZERO.with_y(player.collider_height / 2.0);
                 let shape_caster = ShapeCaster::new(
                     Sphere::new(player.collider_radius * 0.95),
                     shape_caster_origin,
                     Quat::default(),
                     Dir3::NEG_Y,
-                )
-                .with_max_distance(player.float_height * 2.0);
-                let ray_caster = RayCaster::new(ray_caster_origin, Dir3::NEG_Y)
-                    .with_max_distance(player.float_height * 2.0)
-                    .with_max_hits(1);
+                );
+                let ray_caster = RayCaster::new(Vec3::ZERO, Dir3::NEG_Y).with_max_hits(1);
                 let locked_axes = LockedAxes::new()
                     .lock_rotation_x()
                     .lock_rotation_y()
@@ -68,39 +62,48 @@ fn setup(world: &mut World) {
         });
 }
 
-fn ground_check(mut query: Query<(&mut PlayerData, &ShapeHits, &RayHits, &Player)>) {
-    for (mut player_data, shape_hits, ray_hits, player) in &mut query {
+fn ground_check(mut query: Query<(&mut PlayerData, &ShapeHits, &RayHits, &Player, &Transform)>) {
+    for (mut player_data, shape_hits, ray_hits, player, transform) in &mut query {
         let mut dot = Option::<f32>::None;
         let mut normal = Option::<Dir3>::None;
-        let mut shape_hit = Option::<ShapeHitData>::None;
+        let mut height = Option::<f32>::None;
+        let mut hit_point = Option::<Vec3>::None;
         for &hit in ray_hits.iter() {
+            if hit.distance == 0.0 {
+                normal = Some(Dir3::Y);
+                dot = Some(1.0);
+                height = Some(player.collider_height / 2.0 - player.collider_radius);
+                hit_point = Some(transform.translation - Vec3::Y * height.unwrap());
+                break;
+            }
             normal = Some(hit.normal.try_into().unwrap());
             dot = Some(hit.normal.dot(Vec3::Y));
+            height = Some(hit.distance);
+            hit_point = Some(transform.translation - Vec3::Y * height.unwrap());
         }
-        for &hit in shape_hits.iter() {
-            shape_hit = Some(hit);
+        if !(height.is_some() && height.unwrap() <= player.float_height) {
+            for &hit in shape_hits.iter() {
+                normal = Some(hit.normal1.try_into().unwrap());
+                dot = Some(hit.normal1.dot(Vec3::Y));
+                height = Some(transform.translation.y - hit.point1.y);
+                hit_point = Some(hit.point1);
+            }
         }
-        match (dot, shape_hit) {
-            (Some(dot), Some(shape_hit)) => {
-                if shape_hit.distance <= player.float_height {
-                    if dot >= player.max_slope {
-                        player_data.grounded = GroundedState::Grounded;
-                        player_data.ground_distance = Some(shape_hit.distance);
-                    } else {
-                        player_data.grounded = GroundedState::Ungrounded(
-                            UngroundedReason::SteepSlope(normal.unwrap()),
-                        );
-                        player_data.ground_distance = Some(shape_hit.distance);
-                    }
-                } else {
-                    player_data.grounded = GroundedState::Ungrounded(UngroundedReason::Airborne);
-                    player_data.ground_distance = None;
-                }
+
+        if height.is_some() && height.unwrap() <= player.float_height {
+            if dot.unwrap() >= player.max_slope {
+                player_data.grounded = GroundedState::Grounded;
+            } else {
+                player_data.grounded = GroundedState::Ungrounded(UngroundedReason::SteepSlope);
             }
-            _ => {
-                player_data.grounded = GroundedState::Ungrounded(UngroundedReason::Airborne);
-                player_data.ground_distance = None;
-            }
+            player_data.ground_distance = Some(height.unwrap());
+            player_data.ground_height = Some(hit_point.unwrap().y);
+            player_data.ground_normal = Some(normal.unwrap());
+        } else {
+            player_data.grounded = GroundedState::Ungrounded(UngroundedReason::Airborne);
+            player_data.ground_distance = None;
+            player_data.ground_height = None;
+            player_data.ground_normal = None;
         }
     }
 }
@@ -109,24 +112,40 @@ fn grounded_debug(mut contexts: EguiContexts, query: Query<&PlayerData>) {
     for player_data in &query {
         egui::Window::new("Grounded").show(contexts.ctx_mut(), |ui| {
             ui.label(format!(
-                "{:#?}\n{:#?}",
-                player_data.grounded, player_data.ground_distance
+                "{:#?}\n\n{:#?}\n\n{:#?}",
+                player_data.grounded, player_data.ground_distance, player_data.ground_height
             ));
         });
     }
 }
 
-fn float_player(mut query: Query<(&Player, &PlayerData, &mut ExternalForce, &LinearVelocity)>) {
-    for (player, player_data, mut external_force, velocity) in &mut query {
-        match player_data.ground_distance {
-            Some(ground_distance) => {
-                external_force.apply_force(
-                    Dir3::NEG_Y
-                        * (((ground_distance - player.float_height) * player.spring_strength)
-                            - ((Dir3::NEG_Y.dot(**velocity)) * player.spring_damping)),
-                );
+fn float_player(
+    mut query: Query<(
+        &Player,
+        &PlayerData,
+        &mut ExternalForce,
+        &mut LinearVelocity,
+        &mut Transform,
+        &mut GravityScale,
+    )>,
+) {
+    for (player, player_data, mut external_force, mut velocity, mut transform, mut gravity_scale) in
+        &mut query
+    {
+        match (player_data.ground_distance, player_data.ground_height) {
+            (Some(ground_distance), Some(ground_position)) => {
+                let target_height = ground_position + player.float_height;
+                if transform.translation.y < target_height {
+                    gravity_scale.0 = 0.0;
+                    velocity.y = 0.0;
+                    transform.translation.y = target_height;
+                } else {
+                    gravity_scale.0 = 0.0;
+                }
             }
-            _ => {}
+            _ => {
+                gravity_scale.0 = 1.0;
+            }
         }
     }
 }
@@ -137,9 +156,11 @@ fn push_down_slopes(
 ) {
     for (mass, mut external_force, player_data) in &mut query {
         match player_data.grounded {
-            GroundedState::Ungrounded(UngroundedReason::SteepSlope(normal)) => {
-                let magnitude = (gravity.0 * mass.value()).reject_from(normal.as_vec3()).length();
-                let mut direction = normal.as_vec3();
+            GroundedState::Ungrounded(UngroundedReason::SteepSlope) => {
+                let magnitude = (gravity.0 * mass.value())
+                    .reject_from(player_data.ground_normal.unwrap().as_vec3())
+                    .length();
+                let mut direction = player_data.ground_normal.unwrap().as_vec3();
                 direction.y = 0.0;
                 external_force.apply_force(direction.normalize() * magnitude);
             }
@@ -170,5 +191,3 @@ fn move_player(
         external_force.apply_force(movement);
     }
 }
-
-//watch very very valet video again for movement lol
