@@ -5,8 +5,10 @@ use blenvy::*;
 use blueprints::spawn_from_blueprints::{
     BlueprintInfo, GameWorldTag, HideUntilReady, SpawnBlueprint,
 };
+use mesh_markers::MeshMarkerPlugin;
 use player_controller::PlayerControllerPlugin;
 mod player_controller;
+mod mesh_markers;
 
 fn main() -> AppExit {
     App::new()
@@ -15,6 +17,7 @@ fn main() -> AppExit {
         .add_plugins(PhysicsPlugins::default())
         .add_plugins(PhysicsDebugPlugin::default())
         .add_plugins(PlayerControllerPlugin)
+        .add_plugins(MeshMarkerPlugin)
         // We need to register components to make them visible to Blenvy
         .add_systems(Startup, setup)
         .run()
