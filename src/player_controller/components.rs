@@ -47,6 +47,7 @@ pub struct PlayerData {
     pub ground_distance: Option<f32>,
     pub ground_height: Option<f32>,
     pub ground_normal: Option<Dir3>,
+    pub prev_pushed_down_state: PushedDown,
 }
 
 impl Default for PlayerData {
@@ -56,7 +57,18 @@ impl Default for PlayerData {
             ground_distance: None,
             ground_height: None,
             ground_normal: None,
+            prev_pushed_down_state: false,
         }
+    }
+}
+
+#[derive(Component, Reflect)]
+#[reflect(Component, Default)]
+pub struct PlayerChild;
+
+impl Default for PlayerChild {
+    fn default() -> Self {
+        PlayerChild
     }
 }
 
@@ -71,3 +83,5 @@ pub enum UngroundedReason {
     Airborne,
     SteepSlope,
 }
+
+pub type PushedDown = bool;

@@ -50,6 +50,7 @@ fn setup(world: &mut World) {
                     .lock_rotation_y()
                     .lock_rotation_z();
                 let external_force = ExternalForce::default().with_persistence(false);
+
                 (
                     rigid_body,
                     collider,
@@ -59,6 +60,19 @@ fn setup(world: &mut World) {
                     external_force,
                 )
             });
+
+            let child_shape_caster = ShapeCaster::new(
+                Collider::capsule(player.collider_radius, player.collider_height),
+                Vec3::ZERO,
+                Quat::default(),
+                Dir3::Y,
+            )
+            .with_query_filter(SpatialQueryFilter::from_excluded_entities([entity]));
+            let child = world
+                .commands()
+                .spawn((child_shape_caster, PlayerChild))
+                .id();
+            world.commands().entity(entity).add_children(&[child]);
         });
 }
 
@@ -120,34 +134,80 @@ fn grounded_debug(mut contexts: EguiContexts, query: Query<&PlayerData>) {
 }
 
 fn float_player(
-    mut query: Query<(
-        &Player,
-        &PlayerData,
-        &mut ExternalForce,
-        &mut LinearVelocity,
-        &mut Transform,
-        &mut GravityScale,
-    )>,
+    mut query: Query<
+        (
+            &Player,
+            &mut PlayerData,
+            &mut LinearVelocity,
+            &mut Transform,
+            &mut GravityScale,
+        ),
+        Without<PlayerChild>,
+    >,
+    child_query: Query<&ShapeHits, With<PlayerChild>>,
+    time: Res<Time>,
 ) {
-    for (player, player_data, mut external_force, mut velocity, mut transform, mut gravity_scale) in
-        &mut query
-    {
-        match (player_data.ground_distance, player_data.ground_height) {
-            (Some(ground_distance), Some(ground_position)) => {
-                let target_height = ground_position + player.float_height;
+    for (player, mut player_data, mut velocity, mut transform, mut gravity_scale) in &mut query {
+        match player_data.ground_height {
+            Some(ground_height) => {
+                let (float_height, pushed_down) = float_height(
+                    child_query.iter().next().unwrap(),
+                    &ground_height,
+                    &player.float_height,
+                    &(player.collider_height + player.collider_radius * 2.0),
+                );
+                let target_height = ground_height + float_height;
+
                 if transform.translation.y < target_height {
                     gravity_scale.0 = 0.0;
                     velocity.y = 0.0;
-                    transform.translation.y = target_height;
+                    match player_data.prev_pushed_down_state {
+                        true => {
+                            if !pushed_down && player_data.prev_pushed_down_state {
+                                transform.translation.y = ((transform
+                                    .translation.y * Vec3::Y)
+                                    .move_towards(target_height * Vec3::Y, 10.0 * time.delta_secs())).length();
+                                //TODO: rewrite to not do back and forth conversion to vec3
+                                if transform.translation.y == target_height {
+                                    player_data.prev_pushed_down_state = false;
+                                }
+                            } else {
+                                transform.translation.y = target_height;
+                            }
+                        }
+                        false => {
+                            transform.translation.y = target_height;
+                            player_data.prev_pushed_down_state = pushed_down;
+                        }
+                    }
                 } else {
                     gravity_scale.0 = 0.0;
                 }
             }
             _ => {
                 gravity_scale.0 = 1.0;
+                player_data.prev_pushed_down_state = false;
             }
         }
     }
+}
+
+fn float_height(
+    hits: &ShapeHits,
+    ground_height: &f32,
+    float_height: &f32,
+    player_height: &f32,
+) -> (f32, PushedDown) {
+    let target_height = ground_height + float_height;
+    for hit in hits.iter() {
+        if hit.point1.y >= target_height + player_height / 2.0 {
+            return (*float_height, false);
+        } else {
+            return (hit.point1.y - ground_height - player_height / 2.0, true);
+        }
+    }
+
+    (*float_height, false)
 }
 
 fn push_down_slopes(
