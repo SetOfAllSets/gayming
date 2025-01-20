@@ -20265,6 +20265,21 @@
             "$ref": "#/$defs/f32"
           }
         },
+        "grounded_acceleration": {
+          "type": {
+            "$ref": "#/$defs/f32"
+          }
+        },
+        "grounded_max_acceleration": {
+          "type": {
+            "$ref": "#/$defs/f32"
+          }
+        },
+        "grounded_max_speed": {
+          "type": {
+            "$ref": "#/$defs/f32"
+          }
+        },
         "max_slope": {
           "type": {
             "$ref": "#/$defs/f32"
@@ -20287,7 +20302,10 @@
         "max_slope",
         "float_height",
         "spring_strength",
-        "spring_damping"
+        "spring_damping",
+        "grounded_max_speed",
+        "grounded_acceleration",
+        "grounded_max_acceleration"
       ],
       "short_name": "Player",
       "type": "object",

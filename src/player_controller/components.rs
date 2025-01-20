@@ -9,7 +9,6 @@ use bevy::prelude::*;
     Collider,
     ShapeCaster,
     LockedAxes,
-    RayCaster,
     ExternalForce
 )]
 pub struct Player {
@@ -19,6 +18,9 @@ pub struct Player {
     pub float_height: f32,
     pub spring_strength: f32,
     pub spring_damping: f32,
+    pub grounded_max_speed: f32,
+    pub grounded_acceleration: f32,
+    pub grounded_max_acceleration: f32,
 }
 
 impl Default for Player {
@@ -30,6 +32,9 @@ impl Default for Player {
             float_height: 2.0,
             spring_strength: 1000.0,
             spring_damping: 75.0,
+            grounded_max_speed: 15.0,
+            grounded_acceleration: 7.5,
+            grounded_max_acceleration: 10.0,
         }
     }
 }
@@ -59,5 +64,5 @@ pub enum GroundedState {
 #[derive(Reflect, Debug, PartialEq)]
 pub enum UngroundedReason {
     Airborne,
-    SteepSlope,
+    SteepSlope(Dir3),
 }
