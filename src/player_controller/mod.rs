@@ -1,5 +1,6 @@
 use avian3d::prelude::*;
 use bevy::prelude::*;
+use bevy::{input::mouse::MouseMotion, window::CursorGrabMode};
 use bevy_egui::{EguiContexts, egui};
 pub use components::Player;
 use components::*;
@@ -9,17 +10,17 @@ pub struct PlayerControllerPlugin;
 impl Plugin for PlayerControllerPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<Player>()
-            .add_systems(Startup, setup)
+            .add_systems(Startup, (setup, grab_mouse))
             .add_systems(
                 PhysicsSchedule,
                 (
                     ground_check,
                     (
-                        float_player
-                            .ambiguous_with(move_player)
-                            .ambiguous_with(push_down_slopes),
-                        move_player.ambiguous_with(push_down_slopes),
-                        push_down_slopes,
+                        float_player.ambiguous_with_all(),
+                        move_player.ambiguous_with_all(),
+                        push_down_slopes.ambiguous_with_all(),
+                        rotate_player.ambiguous_with_all(),
+                        rotate_camera.ambiguous_with_all(),
                     ),
                 )
                     .chain()
@@ -68,11 +69,28 @@ fn setup(world: &mut World) {
                 Dir3::Y,
             )
             .with_query_filter(SpatialQueryFilter::from_excluded_entities([entity]));
-            let child = world
+            let collider_child = world
                 .commands()
-                .spawn((child_shape_caster, PlayerChild))
+                .spawn((child_shape_caster, PlayerShapeCasterChild))
                 .id();
-            world.commands().entity(entity).add_children(&[child]);
+            world
+                .commands()
+                .entity(entity)
+                .add_children(&[collider_child]);
+
+            let child_camera = Camera3d::default();
+            let child_projection = Projection::from(PerspectiveProjection {
+                fov: player.fov.to_radians(),
+                ..default()
+            });
+            let camera_child = world
+                .commands()
+                .spawn((child_camera, child_projection, PlayerCameraChild::default()))
+                .id();
+            world
+                .commands()
+                .entity(entity)
+                .add_children(&[camera_child]);
         });
 }
 
@@ -92,7 +110,6 @@ fn ground_check(mut query: Query<(&mut PlayerData, &ShapeHits, &RayHits, &Player
             }
             normal = Some(hit.normal.try_into().unwrap());
             ground_angle = Some(hit.normal.angle_between(Vec3::Y).to_degrees());
-            println!("{}", ground_angle.unwrap());
             height = Some(hit.distance);
             hit_point = Some(transform.translation - Vec3::Y * height.unwrap());
         }
@@ -104,9 +121,10 @@ fn ground_check(mut query: Query<(&mut PlayerData, &ShapeHits, &RayHits, &Player
                 hit_point = Some(hit.point1);
             }
         }
-        println!("{:#?}", ground_angle);
-        if height.is_some() && height.unwrap() <= player.float_height {
-            if ground_angle.unwrap() <= player.max_slope_degrees {
+        //rotating sometimes changes Y transform a tiny amount, 0.01 buffer makes that fine
+        if height.is_some() && height.unwrap() <= player.float_height + 0.01 {
+            //it's just innaccurate sometimes idk
+            if ground_angle.unwrap() <= player.max_slope_degrees + 0.1 {
                 player_data.grounded = GroundedState::Grounded;
             } else {
                 player_data.grounded = GroundedState::Ungrounded(UngroundedReason::SteepSlope);
@@ -143,9 +161,9 @@ fn float_player(
             &mut Transform,
             &mut GravityScale,
         ),
-        Without<PlayerChild>,
+        Without<PlayerShapeCasterChild>,
     >,
-    child_query: Query<&ShapeHits, With<PlayerChild>>,
+    child_query: Query<&ShapeHits, With<PlayerShapeCasterChild>>,
     time: Res<Time>,
 ) {
     for (player, mut player_data, mut velocity, mut transform, mut gravity_scale) in &mut query {
@@ -253,5 +271,38 @@ fn move_player(
         }
         movement = movement.normalize_or_zero() * player.grounded_max_speed;
         external_force.apply_force(movement);
+    }
+}
+
+fn grab_mouse(mut window: Single<&mut Window>) {
+    window.cursor_options.visible = false;
+    window.cursor_options.grab_mode = CursorGrabMode::Locked;
+}
+
+fn rotate_player(mut query: Query<(&mut Transform, &Player)>, mut mouse: EventReader<MouseMotion>) {
+    for movement in mouse.read() {
+        for (mut transform, player) in &mut query {
+            transform.rotate_y(-1.0 * movement.delta.x * player.horizontal_camera_sensitivity);
+        }
+    }
+}
+
+fn rotate_camera(
+    mut camera_query: Query<(&mut Transform, &mut PlayerCameraChild)>,
+    player_query: Query<&Player>,
+    mut mouse: EventReader<MouseMotion>,
+) {
+    for movement in mouse.read() {
+        for (mut transform, mut camera) in &mut camera_query {
+            for player in &player_query {
+                transform.rotation = Quat::default();
+                camera.pitch += -1.0 * movement.delta.y * player.vertical_camera_sensitivity;
+                camera.pitch = camera.pitch.clamp(-90f32.to_radians(), 90f32.to_radians());
+                transform.rotate_around(
+                    Vec3::ZERO,
+                    Quat::from_rotation_x( camera.pitch),
+                );
+            }
+        }
     }
 }

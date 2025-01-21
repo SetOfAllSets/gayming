@@ -22,6 +22,9 @@ pub struct Player {
     pub grounded_max_speed: f32,
     pub grounded_acceleration: f32,
     pub grounded_max_acceleration: f32,
+    pub horizontal_camera_sensitivity: f32,
+    pub vertical_camera_sensitivity: f32,
+    pub fov: f32,
 }
 
 impl Default for Player {
@@ -36,6 +39,9 @@ impl Default for Player {
             grounded_max_speed: 15.0,
             grounded_acceleration: 7.5,
             grounded_max_acceleration: 10.0,
+            horizontal_camera_sensitivity: 0.05,
+            vertical_camera_sensitivity: 0.01,
+            fov: 90.0,
         }
     }
 }
@@ -64,11 +70,25 @@ impl Default for PlayerData {
 
 #[derive(Component, Reflect)]
 #[reflect(Component, Default)]
-pub struct PlayerChild;
+pub struct PlayerShapeCasterChild;
 
-impl Default for PlayerChild {
+impl Default for PlayerShapeCasterChild {
     fn default() -> Self {
-        PlayerChild
+        PlayerShapeCasterChild
+    }
+}
+
+#[derive(Component, Reflect)]
+#[reflect(Component, Default)]
+pub struct PlayerCameraChild {
+    pub pitch: f32,
+}
+
+impl Default for PlayerCameraChild {
+    fn default() -> Self {
+        PlayerCameraChild {
+            pitch: 90f32.to_radians(),
+        }
     }
 }
 

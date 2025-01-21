@@ -20276,6 +20276,11 @@
             "$ref": "#/$defs/f32"
           }
         },
+        "fov": {
+          "type": {
+            "$ref": "#/$defs/f32"
+          }
+        },
         "grounded_acceleration": {
           "type": {
             "$ref": "#/$defs/f32"
@@ -20287,6 +20292,11 @@
           }
         },
         "grounded_max_speed": {
+          "type": {
+            "$ref": "#/$defs/f32"
+          }
+        },
+        "horizontal_camera_sensitivity": {
           "type": {
             "$ref": "#/$defs/f32"
           }
@@ -20305,6 +20315,11 @@
           "type": {
             "$ref": "#/$defs/f32"
           }
+        },
+        "vertical_camera_sensitivity": {
+          "type": {
+            "$ref": "#/$defs/f32"
+          }
         }
       },
       "required": [
@@ -20316,7 +20331,10 @@
         "spring_damping",
         "grounded_max_speed",
         "grounded_acceleration",
-        "grounded_max_acceleration"
+        "grounded_max_acceleration",
+        "horizontal_camera_sensitivity",
+        "vertical_camera_sensitivity",
+        "fov"
       ],
       "short_name": "Player",
       "type": "object",
