@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use avian3d::prelude::*;
 use bevy::prelude::*;
 use bevy::{input::mouse::MouseMotion, window::CursorGrabMode};
@@ -12,15 +14,16 @@ impl Plugin for PlayerControllerPlugin {
         app.register_type::<Player>()
             .add_systems(Startup, (setup, grab_mouse))
             .add_systems(
-                PhysicsSchedule,
+                Update,
                 (
                     ground_check,
                     (
-                        float_player.ambiguous_with_all(),
-                        move_player.ambiguous_with_all(),
-                        push_down_slopes.ambiguous_with_all(),
-                        rotate_player.ambiguous_with_all(),
-                        rotate_camera.ambiguous_with_all(),
+                        float_player,
+                        move_player,
+                        push_down_slopes,
+                        rotate_player,
+                        rotate_camera,
+                        jump.after(float_player),
                     ),
                 )
                     .chain()
@@ -168,8 +171,13 @@ fn float_player(
     child_query: Query<&ShapeHits, With<PlayerShapeCasterChild>>,
     time: Res<Time>,
 ) {
-    //TODO: Flatten this funcion make generally make it less of an eyesore
+    //TODO: Flatten this funcion and generally make it less of an eyesore
     for (player, mut player_data, mut velocity, mut transform, mut gravity_scale) in &mut query {
+        if !player_data.jumped.finished() {
+            gravity_scale.0 = 1.0;
+            player_data.prev_pushed_down = false;
+            return;
+        }
         match player_data.ground_height {
             Some(ground_height) => {
                 let (float_height, pushed_down) = float_height(
@@ -183,27 +191,21 @@ fn float_player(
                 if transform.translation.y < target_height {
                     gravity_scale.0 = 0.0;
                     velocity.y = 0.0;
-                    match player_data.prev_pushed_down_state {
-                        true => {
-                            if !pushed_down && player_data.prev_pushed_down_state {
-                                transform.translation.y = ((transform.translation.y * Vec3::Y)
-                                    .move_towards(
-                                        target_height * Vec3::Y,
-                                        10.0 * time.delta_secs(),
-                                    ))
-                                .length();
-                                //TODO: rewrite to not do back and forth conversion to vec3
-                                if transform.translation.y == target_height {
-                                    player_data.prev_pushed_down_state = false;
-                                }
-                            } else {
-                                transform.translation.y = target_height;
+                    if player_data.prev_pushed_down {
+                        if !pushed_down && player_data.prev_pushed_down {
+                            transform.translation.y = ((transform.translation.y * Vec3::Y)
+                                .move_towards(target_height * Vec3::Y, 10.0 * time.delta_secs()))
+                            .length();
+                            //TODO: rewrite to not do back and forth conversion to vec3
+                            if transform.translation.y == target_height {
+                                player_data.prev_pushed_down = false;
                             }
-                        }
-                        false => {
+                        } else {
                             transform.translation.y = target_height;
-                            player_data.prev_pushed_down_state = pushed_down;
                         }
+                    } else {
+                        transform.translation.y = target_height;
+                        player_data.prev_pushed_down = pushed_down;
                     }
                 } else {
                     gravity_scale.0 = 0.0;
@@ -212,7 +214,7 @@ fn float_player(
             }
             _ => {
                 gravity_scale.0 = 1.0;
-                player_data.prev_pushed_down_state = false;
+                player_data.prev_pushed_down = false;
             }
         }
     }
@@ -223,7 +225,7 @@ fn float_height(
     ground_height: &f32,
     float_height: &f32,
     player_height: &f32,
-) -> (f32, PushedDown) {
+) -> (f32, bool) {
     let target_height = ground_height + float_height;
     for hit in hits.iter() {
         if hit.point1.y >= target_height + player_height {
@@ -330,5 +332,22 @@ fn rotate_camera(
                 transform.rotate_around(Vec3::ZERO, Quat::from_rotation_x(camera.pitch));
             }
         }
+    }
+}
+
+fn jump(
+    mut query: Query<(
+        &mut LinearVelocity,
+        &mut PlayerData,
+    )>,
+    keys: Res<ButtonInput<KeyCode>>,
+    time: Res<Time>
+) {
+    for (mut velocity, mut player_data) in &mut query {
+        if keys.just_pressed(KeyCode::Space) && player_data.grounded == GroundedState::Grounded {
+            velocity.y += 10.0;
+            player_data.jumped.reset();
+        }
+        player_data.jumped.tick(Duration::from_secs_f32(time.delta_secs()));
     }
 }
