@@ -15,7 +15,7 @@ use bevy::prelude::*;
 pub struct Player {
     pub collider_height: f32,
     pub collider_radius: f32,
-    pub max_slope: f32,
+    pub max_slope_degrees: f32,
     pub float_height: f32,
     pub spring_strength: f32,
     pub spring_damping: f32,
@@ -29,7 +29,7 @@ impl Default for Player {
         Player {
             collider_height: 2.0,
             collider_radius: 2.0,
-            max_slope: 0.75,
+            max_slope_degrees: 0.75,
             float_height: 2.0,
             spring_strength: 1000.0,
             spring_damping: 75.0,

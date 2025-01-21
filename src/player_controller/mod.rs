@@ -62,7 +62,7 @@ fn setup(world: &mut World) {
             });
 
             let child_shape_caster = ShapeCaster::new(
-                Collider::capsule(player.collider_radius, player.collider_height),
+                Collider::capsule(player.collider_radius * 0.95, player.collider_height),
                 Vec3::ZERO,
                 Quat::default(),
                 Dir3::Y,
@@ -78,34 +78,35 @@ fn setup(world: &mut World) {
 
 fn ground_check(mut query: Query<(&mut PlayerData, &ShapeHits, &RayHits, &Player, &Transform)>) {
     for (mut player_data, shape_hits, ray_hits, player, transform) in &mut query {
-        let mut dot = Option::<f32>::None;
+        let mut ground_angle = Option::<f32>::None;
         let mut normal = Option::<Dir3>::None;
         let mut height = Option::<f32>::None;
         let mut hit_point = Option::<Vec3>::None;
         for &hit in ray_hits.iter() {
             if hit.distance == 0.0 {
                 normal = Some(Dir3::Y);
-                dot = Some(1.0);
+                ground_angle = Some(0.0);
                 height = Some(player.collider_height / 2.0 - player.collider_radius);
                 hit_point = Some(transform.translation - Vec3::Y * height.unwrap());
                 break;
             }
             normal = Some(hit.normal.try_into().unwrap());
-            dot = Some(hit.normal.dot(Vec3::Y));
+            ground_angle = Some(hit.normal.angle_between(Vec3::Y).to_degrees());
+            println!("{}", ground_angle.unwrap());
             height = Some(hit.distance);
             hit_point = Some(transform.translation - Vec3::Y * height.unwrap());
         }
         if !(height.is_some() && height.unwrap() <= player.float_height) {
             for &hit in shape_hits.iter() {
                 normal = Some(hit.normal1.try_into().unwrap());
-                dot = Some(hit.normal1.dot(Vec3::Y));
+                ground_angle = Some(hit.normal1.angle_between(Vec3::Y).to_degrees());
                 height = Some(transform.translation.y - hit.point1.y);
                 hit_point = Some(hit.point1);
             }
         }
-
+        println!("{:#?}", ground_angle);
         if height.is_some() && height.unwrap() <= player.float_height {
-            if dot.unwrap() >= player.max_slope {
+            if ground_angle.unwrap() <= player.max_slope_degrees {
                 player_data.grounded = GroundedState::Grounded;
             } else {
                 player_data.grounded = GroundedState::Ungrounded(UngroundedReason::SteepSlope);
@@ -164,9 +165,12 @@ fn float_player(
                     match player_data.prev_pushed_down_state {
                         true => {
                             if !pushed_down && player_data.prev_pushed_down_state {
-                                transform.translation.y = ((transform
-                                    .translation.y * Vec3::Y)
-                                    .move_towards(target_height * Vec3::Y, 10.0 * time.delta_secs())).length();
+                                transform.translation.y = ((transform.translation.y * Vec3::Y)
+                                    .move_towards(
+                                        target_height * Vec3::Y,
+                                        10.0 * time.delta_secs(),
+                                    ))
+                                .length();
                                 //TODO: rewrite to not do back and forth conversion to vec3
                                 if transform.translation.y == target_height {
                                     player_data.prev_pushed_down_state = false;

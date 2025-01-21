@@ -20291,7 +20291,7 @@
             "$ref": "#/$defs/f32"
           }
         },
-        "max_slope": {
+        "max_slope_degrees": {
           "type": {
             "$ref": "#/$defs/f32"
           }
@@ -20310,7 +20310,7 @@
       "required": [
         "collider_height",
         "collider_radius",
-        "max_slope",
+        "max_slope_degrees",
         "float_height",
         "spring_strength",
         "spring_damping",

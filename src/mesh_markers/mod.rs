@@ -17,7 +17,6 @@ fn instantiate_meshes(world: &mut World) {
             let asset_server = world.resource::<AssetServer>();
             let handle = asset_server
                 .load::<GltfMesh>(GltfAssetLabel::Mesh(0).from_asset("blueprints/Ramp.glb"));
-            println!("{:#?}", handle.id());
             let mesh = world.resource::<Assets<GltfMesh>>().get(handle.id());
             let mesh = world
                 .resource::<Assets<Mesh>>()
