@@ -83,6 +83,8 @@ fn setup(world: &mut World) {
                 fov: player.fov.to_radians(),
                 ..default()
             });
+            //let mut temp_transform = Transform::default();
+            //temp_transform.translation.z -= 7.0;
             let camera_child = world
                 .commands()
                 .spawn((child_camera, child_projection, PlayerCameraChild::default()))
@@ -104,7 +106,7 @@ fn ground_check(mut query: Query<(&mut PlayerData, &ShapeHits, &RayHits, &Player
             if hit.distance == 0.0 {
                 normal = Some(Dir3::Y);
                 ground_angle = Some(0.0);
-                height = Some(player.collider_height / 2.0 - player.collider_radius);
+                height = Some(player.collider_height / 2.0 + player.collider_radius);
                 hit_point = Some(transform.translation - Vec3::Y * height.unwrap());
                 break;
             }
@@ -121,8 +123,8 @@ fn ground_check(mut query: Query<(&mut PlayerData, &ShapeHits, &RayHits, &Player
                 hit_point = Some(hit.point1);
             }
         }
-        //rotating sometimes changes Y transform a tiny amount, 0.01 buffer makes that fine
-        if height.is_some() && height.unwrap() <= player.float_height + 0.01 {
+        // + 0.2 allows us to stay glued to ramps
+        if height.is_some() && height.unwrap() <= player.float_height + 0.2 {
             //it's just innaccurate sometimes idk
             if ground_angle.unwrap() <= player.max_slope_degrees + 0.1 {
                 player_data.grounded = GroundedState::Grounded;
@@ -166,6 +168,7 @@ fn float_player(
     child_query: Query<&ShapeHits, With<PlayerShapeCasterChild>>,
     time: Res<Time>,
 ) {
+    //TODO: Flatten this funcion make generally make it less of an eyesore
     for (player, mut player_data, mut velocity, mut transform, mut gravity_scale) in &mut query {
         match player_data.ground_height {
             Some(ground_height) => {
@@ -173,7 +176,7 @@ fn float_player(
                     child_query.iter().next().unwrap(),
                     &ground_height,
                     &player.float_height,
-                    &(player.collider_height + player.collider_radius * 2.0),
+                    &(player.collider_height / 2.0 + player.collider_radius),
                 );
                 let target_height = ground_height + float_height;
 
@@ -204,6 +207,7 @@ fn float_player(
                     }
                 } else {
                     gravity_scale.0 = 0.0;
+                    transform.translation.y = target_height;
                 }
             }
             _ => {
@@ -222,10 +226,14 @@ fn float_height(
 ) -> (f32, PushedDown) {
     let target_height = ground_height + float_height;
     for hit in hits.iter() {
-        if hit.point1.y >= target_height + player_height / 2.0 {
+        if hit.point1.y >= target_height + player_height {
             return (*float_height, false);
         } else {
-            return (hit.point1.y - ground_height - player_height / 2.0, true);
+            let mut float_distance = hit.point1.y - ground_height - player_height;
+            if float_distance < *player_height {
+                float_distance = *player_height;
+            }
+            return (float_distance, true);
         }
     }
 
@@ -239,12 +247,12 @@ fn push_down_slopes(
     for (mass, mut external_force, player_data) in &mut query {
         match player_data.grounded {
             GroundedState::Ungrounded(UngroundedReason::SteepSlope) => {
-                let magnitude = (gravity.0 * mass.value())
-                    .reject_from(player_data.ground_normal.unwrap().as_vec3())
-                    .length();
-                let mut direction = player_data.ground_normal.unwrap().as_vec3();
-                direction.y = 0.0;
-                external_force.apply_force(direction.normalize() * magnitude);
+                let force = Vec3::NEG_Y
+                    * (gravity.0 * mass.value())
+                        .reject_from(player_data.ground_normal.unwrap().as_vec3())
+                        .length();
+                external_force
+                    .apply_force(force.reject_from(player_data.ground_normal.unwrap().as_vec3()));
             }
             _ => {}
         }
@@ -252,24 +260,45 @@ fn push_down_slopes(
 }
 
 fn move_player(
-    mut query: Query<(&Player, &mut ExternalForce, &Transform)>,
+    mut query: Query<(
+        &Player,
+        &mut ExternalForce,
+        &Transform,
+        &LinearVelocity,
+        &PlayerData,
+    )>,
     keys: Res<ButtonInput<KeyCode>>,
 ) {
-    for (player, mut external_force, transform) in &mut query {
+    for (player, mut external_force, transform, velocity, player_data) in &mut query {
         let mut movement = Vec3::ZERO;
+        let mut moving = false;
         if keys.pressed(KeyCode::KeyW) {
             movement += transform.forward().as_vec3();
+            moving = true;
         }
         if keys.pressed(KeyCode::KeyS) {
             movement += transform.back().as_vec3();
+            moving = true;
         }
         if keys.pressed(KeyCode::KeyQ) {
             movement += transform.left().as_vec3();
+            moving = true;
         }
         if keys.pressed(KeyCode::KeyD) {
             movement += transform.right().as_vec3();
+            moving = true;
         }
-        movement = movement.normalize_or_zero() * player.grounded_max_speed;
+        if player_data.grounded == GroundedState::Grounded {
+            movement = movement.normalize_or_zero() * player.grounded_speed;
+            movement = movement.reject_from(player_data.ground_normal.unwrap().as_vec3());
+            if !moving {
+                movement = Vec3::new(velocity.0.x, 0.0, velocity.0.z).normalize_or_zero() * -1.0
+                    / player.ground_friction;
+            }
+        } else {
+            movement = movement.normalize_or_zero() * player.airborne_sped;
+        }
+
         external_force.apply_force(movement);
     }
 }
@@ -298,10 +327,7 @@ fn rotate_camera(
                 transform.rotation = Quat::default();
                 camera.pitch += -1.0 * movement.delta.y * player.vertical_camera_sensitivity;
                 camera.pitch = camera.pitch.clamp(-90f32.to_radians(), 90f32.to_radians());
-                transform.rotate_around(
-                    Vec3::ZERO,
-                    Quat::from_rotation_x( camera.pitch),
-                );
+                transform.rotate_around(Vec3::ZERO, Quat::from_rotation_x(camera.pitch));
             }
         }
     }

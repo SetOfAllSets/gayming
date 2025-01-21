@@ -17,14 +17,12 @@ pub struct Player {
     pub collider_radius: f32,
     pub max_slope_degrees: f32,
     pub float_height: f32,
-    pub spring_strength: f32,
-    pub spring_damping: f32,
-    pub grounded_max_speed: f32,
-    pub grounded_acceleration: f32,
-    pub grounded_max_acceleration: f32,
+    pub grounded_speed: f32,
+    pub airborne_sped: f32,
     pub horizontal_camera_sensitivity: f32,
     pub vertical_camera_sensitivity: f32,
     pub fov: f32,
+    pub ground_friction: f32,
 }
 
 impl Default for Player {
@@ -34,14 +32,12 @@ impl Default for Player {
             collider_radius: 2.0,
             max_slope_degrees: 0.75,
             float_height: 2.0,
-            spring_strength: 1000.0,
-            spring_damping: 75.0,
-            grounded_max_speed: 15.0,
-            grounded_acceleration: 7.5,
-            grounded_max_acceleration: 10.0,
+            grounded_speed: 15.0,
+            airborne_sped: 7.5,
             horizontal_camera_sensitivity: 0.05,
             vertical_camera_sensitivity: 0.01,
             fov: 90.0,
+            ground_friction: 10.0,
         }
     }
 }

@@ -20261,6 +20261,11 @@
       "isResource": false,
       "long_name": "gayming::player_controller::components::Player",
       "properties": {
+        "airborne_sped": {
+          "type": {
+            "$ref": "#/$defs/f32"
+          }
+        },
         "collider_height": {
           "type": {
             "$ref": "#/$defs/f32"
@@ -20281,17 +20286,12 @@
             "$ref": "#/$defs/f32"
           }
         },
-        "grounded_acceleration": {
+        "ground_friction": {
           "type": {
             "$ref": "#/$defs/f32"
           }
         },
-        "grounded_max_acceleration": {
-          "type": {
-            "$ref": "#/$defs/f32"
-          }
-        },
-        "grounded_max_speed": {
+        "grounded_speed": {
           "type": {
             "$ref": "#/$defs/f32"
           }
@@ -20302,16 +20302,6 @@
           }
         },
         "max_slope_degrees": {
-          "type": {
-            "$ref": "#/$defs/f32"
-          }
-        },
-        "spring_damping": {
-          "type": {
-            "$ref": "#/$defs/f32"
-          }
-        },
-        "spring_strength": {
           "type": {
             "$ref": "#/$defs/f32"
           }
@@ -20327,14 +20317,12 @@
         "collider_radius",
         "max_slope_degrees",
         "float_height",
-        "spring_strength",
-        "spring_damping",
-        "grounded_max_speed",
-        "grounded_acceleration",
-        "grounded_max_acceleration",
+        "grounded_speed",
+        "airborne_sped",
         "horizontal_camera_sensitivity",
         "vertical_camera_sensitivity",
-        "fov"
+        "fov",
+        "ground_friction"
       ],
       "short_name": "Player",
       "type": "object",
