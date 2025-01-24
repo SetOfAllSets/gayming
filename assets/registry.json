@@ -347,19 +347,6 @@
       "type": "array",
       "typeInfo": "Tuple"
     },
-    "[f32; 4]": {
-      "isComponent": false,
-      "isResource": false,
-      "items": {
-        "type": {
-          "$ref": "#/$defs/f32"
-        }
-      },
-      "long_name": "[f32; 4]",
-      "short_name": "[f32; 4]",
-      "type": "array",
-      "typeInfo": "Array"
-    },
     "[u32; 2]": {
       "isComponent": false,
       "isResource": false,
@@ -1619,183 +1606,6 @@
         "match_contacts"
       ],
       "short_name": "NarrowPhaseConfig",
-      "type": "object",
-      "typeInfo": "Struct"
-    },
-    "avian3d::debug_render::configuration::ContactGizmoScale": {
-      "isComponent": false,
-      "isResource": false,
-      "long_name": "avian3d::debug_render::configuration::ContactGizmoScale",
-      "oneOf": [
-        {
-          "items": false,
-          "long_name": "Constant",
-          "prefixItems": [
-            {
-              "type": {
-                "$ref": "#/$defs/f32"
-              }
-            }
-          ],
-          "short_name": "Constant",
-          "type": "array",
-          "typeInfo": "Tuple"
-        },
-        {
-          "items": false,
-          "long_name": "Scaled",
-          "prefixItems": [
-            {
-              "type": {
-                "$ref": "#/$defs/f32"
-              }
-            }
-          ],
-          "short_name": "Scaled",
-          "type": "array",
-          "typeInfo": "Tuple"
-        }
-      ],
-      "short_name": "ContactGizmoScale",
-      "type": "object",
-      "typeInfo": "Enum"
-    },
-    "avian3d::debug_render::configuration::DebugRender": {
-      "additionalProperties": false,
-      "isComponent": true,
-      "isResource": false,
-      "long_name": "avian3d::debug_render::configuration::DebugRender",
-      "properties": {
-        "aabb_color": {
-          "type": {
-            "$ref": "#/$defs/core::option::Option<bevy_color::color::Color>"
-          }
-        },
-        "axis_lengths": {
-          "type": {
-            "$ref": "#/$defs/core::option::Option<glam::Vec3>"
-          }
-        },
-        "collider_color": {
-          "type": {
-            "$ref": "#/$defs/core::option::Option<bevy_color::color::Color>"
-          }
-        },
-        "hide_mesh": {
-          "type": {
-            "$ref": "#/$defs/bool"
-          }
-        },
-        "sleeping_color_multiplier": {
-          "type": {
-            "$ref": "#/$defs/core::option::Option<[f32; 4]>"
-          }
-        }
-      },
-      "required": [
-        "hide_mesh"
-      ],
-      "short_name": "DebugRender",
-      "type": "object",
-      "typeInfo": "Struct"
-    },
-    "avian3d::debug_render::configuration::PhysicsGizmos": {
-      "additionalProperties": false,
-      "isComponent": false,
-      "isResource": false,
-      "long_name": "avian3d::debug_render::configuration::PhysicsGizmos",
-      "properties": {
-        "aabb_color": {
-          "type": {
-            "$ref": "#/$defs/core::option::Option<bevy_color::color::Color>"
-          }
-        },
-        "axis_lengths": {
-          "type": {
-            "$ref": "#/$defs/core::option::Option<glam::Vec3>"
-          }
-        },
-        "collider_color": {
-          "type": {
-            "$ref": "#/$defs/core::option::Option<bevy_color::color::Color>"
-          }
-        },
-        "contact_normal_color": {
-          "type": {
-            "$ref": "#/$defs/core::option::Option<bevy_color::color::Color>"
-          }
-        },
-        "contact_normal_scale": {
-          "type": {
-            "$ref": "#/$defs/avian3d::debug_render::configuration::ContactGizmoScale"
-          }
-        },
-        "contact_point_color": {
-          "type": {
-            "$ref": "#/$defs/core::option::Option<bevy_color::color::Color>"
-          }
-        },
-        "hide_meshes": {
-          "type": {
-            "$ref": "#/$defs/bool"
-          }
-        },
-        "joint_anchor_color": {
-          "type": {
-            "$ref": "#/$defs/core::option::Option<bevy_color::color::Color>"
-          }
-        },
-        "joint_separation_color": {
-          "type": {
-            "$ref": "#/$defs/core::option::Option<bevy_color::color::Color>"
-          }
-        },
-        "raycast_color": {
-          "type": {
-            "$ref": "#/$defs/core::option::Option<bevy_color::color::Color>"
-          }
-        },
-        "raycast_normal_color": {
-          "type": {
-            "$ref": "#/$defs/core::option::Option<bevy_color::color::Color>"
-          }
-        },
-        "raycast_point_color": {
-          "type": {
-            "$ref": "#/$defs/core::option::Option<bevy_color::color::Color>"
-          }
-        },
-        "shapecast_color": {
-          "type": {
-            "$ref": "#/$defs/core::option::Option<bevy_color::color::Color>"
-          }
-        },
-        "shapecast_normal_color": {
-          "type": {
-            "$ref": "#/$defs/core::option::Option<bevy_color::color::Color>"
-          }
-        },
-        "shapecast_point_color": {
-          "type": {
-            "$ref": "#/$defs/core::option::Option<bevy_color::color::Color>"
-          }
-        },
-        "shapecast_shape_color": {
-          "type": {
-            "$ref": "#/$defs/core::option::Option<bevy_color::color::Color>"
-          }
-        },
-        "sleeping_color_multiplier": {
-          "type": {
-            "$ref": "#/$defs/core::option::Option<[f32; 4]>"
-          }
-        }
-      },
-      "required": [
-        "contact_normal_scale",
-        "hide_meshes"
-      ],
-      "short_name": "PhysicsGizmos",
       "type": "object",
       "typeInfo": "Struct"
     },
@@ -19202,33 +19012,6 @@
       "type": "object",
       "typeInfo": "Enum"
     },
-    "core::option::Option<[f32; 4]>": {
-      "isComponent": false,
-      "isResource": false,
-      "long_name": "core::option::Option<[f32; 4]>",
-      "oneOf": [
-        {
-          "long_name": "None"
-        },
-        {
-          "items": false,
-          "long_name": "Some",
-          "prefixItems": [
-            {
-              "type": {
-                "$ref": "#/$defs/[f32; 4]"
-              }
-            }
-          ],
-          "short_name": "Some",
-          "type": "array",
-          "typeInfo": "Tuple"
-        }
-      ],
-      "short_name": "Option<[f32; 4]>",
-      "type": "object",
-      "typeInfo": "Enum"
-    },
     "core::option::Option<alloc::string::String>": {
       "isComponent": false,
       "isResource": false,
@@ -20301,6 +20084,11 @@
             "$ref": "#/$defs/f32"
           }
         },
+        "jump_height": {
+          "type": {
+            "$ref": "#/$defs/f32"
+          }
+        },
         "max_slope_degrees": {
           "type": {
             "$ref": "#/$defs/f32"
@@ -20322,7 +20110,8 @@
         "horizontal_camera_sensitivity",
         "vertical_camera_sensitivity",
         "fov",
-        "ground_friction"
+        "ground_friction",
+        "jump_height"
       ],
       "short_name": "Player",
       "type": "object",

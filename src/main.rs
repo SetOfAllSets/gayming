@@ -15,7 +15,7 @@ fn main() -> AppExit {
         .add_plugins((DefaultPlugins, BlenvyPlugin::default()))
         .add_plugins(WorldInspectorPlugin::new())
         .add_plugins(PhysicsPlugins::default())
-        .add_plugins(PhysicsDebugPlugin::default())
+        //.add_plugins(PhysicsDebugPlugin::default())
         .add_plugins(PlayerControllerPlugin)
         .add_plugins(MeshMarkerPlugin)
         // We need to register components to make them visible to Blenvy

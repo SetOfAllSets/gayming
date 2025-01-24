@@ -25,6 +25,7 @@ pub struct Player {
     pub vertical_camera_sensitivity: f32,
     pub fov: f32,
     pub ground_friction: f32,
+    pub jump_height: f32,
 }
 
 impl Default for Player {
@@ -40,6 +41,7 @@ impl Default for Player {
             vertical_camera_sensitivity: 0.01,
             fov: 90.0,
             ground_friction: 10.0,
+            jump_height: 5.0,
         }
     }
 }

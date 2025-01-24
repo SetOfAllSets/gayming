@@ -14,22 +14,22 @@ impl Plugin for PlayerControllerPlugin {
         app.register_type::<Player>()
             .add_systems(Startup, (setup, grab_mouse))
             .add_systems(
-                Update,
+                PhysicsSchedule,
                 (
                     ground_check,
                     (
-                        float_player,
-                        move_player,
-                        push_down_slopes,
-                        rotate_player,
-                        rotate_camera,
-                        jump.after(float_player),
+                        float_player.ambiguous_with_all(),
+                        push_down_slopes.ambiguous_with_all(),
+                        rotate_player.ambiguous_with_all(),
+                        rotate_camera.ambiguous_with_all(),
+                        jump.ambiguous_with_all(),
                     ),
                 )
                     .chain()
                     .after(PhysicsStepSet::Last),
             )
-            .add_systems(Update, grounded_debug);
+            .add_systems(Update, grounded_debug)
+            .add_systems(Update, move_player.ambiguous_with_all());
     }
 }
 
@@ -273,30 +273,40 @@ fn move_player(
 ) {
     for (player, mut external_force, transform, velocity, player_data) in &mut query {
         let mut movement = Vec3::ZERO;
+        let mut slowdown = Vec3::ZERO;
         let mut moving = false;
         if keys.pressed(KeyCode::KeyW) {
             movement += transform.forward().as_vec3();
             moving = true;
+        } else if player_data.grounded == GroundedState::Grounded && velocity.dot(transform.forward().as_vec3()) > 0.0 {
+            slowdown -= transform.forward().as_vec3()
         }
         if keys.pressed(KeyCode::KeyS) {
             movement += transform.back().as_vec3();
             moving = true;
+        } else if player_data.grounded == GroundedState::Grounded && velocity.dot(transform.back().as_vec3()) > 0.0 {
+            slowdown -= transform.back().as_vec3()
         }
         if keys.pressed(KeyCode::KeyQ) {
             movement += transform.left().as_vec3();
             moving = true;
+        } else if player_data.grounded == GroundedState::Grounded && velocity.dot(transform.left().as_vec3()) > 0.0 {
+            slowdown -= transform.left().as_vec3()
         }
         if keys.pressed(KeyCode::KeyD) {
             movement += transform.right().as_vec3();
             moving = true;
+        } else if player_data.grounded == GroundedState::Grounded && velocity.dot(transform.right().as_vec3()) > 0.0 {
+            slowdown -= transform.right().as_vec3()
         }
         if player_data.grounded == GroundedState::Grounded {
             movement = movement.normalize_or_zero() * player.grounded_speed;
+            movement += slowdown.normalize_or_zero() * player.ground_friction;
             movement = movement.reject_from(player_data.ground_normal.unwrap().as_vec3());
-            if !moving {
+            /*if !moving {
                 movement = Vec3::new(velocity.0.x, 0.0, velocity.0.z).normalize_or_zero() * -1.0
-                    / player.ground_friction;
-            }
+                    * player.ground_friction;
+            }*/
         } else {
             movement = movement.normalize_or_zero() * player.airborne_sped;
         }
@@ -339,13 +349,14 @@ fn jump(
     mut query: Query<(
         &mut LinearVelocity,
         &mut PlayerData,
+        &Player
     )>,
     keys: Res<ButtonInput<KeyCode>>,
     time: Res<Time>
 ) {
-    for (mut velocity, mut player_data) in &mut query {
-        if keys.just_pressed(KeyCode::Space) && player_data.grounded == GroundedState::Grounded {
-            velocity.y += 10.0;
+    for (mut velocity, mut player_data, player) in &mut query {
+        if keys.just_pressed(KeyCode::Space) && player_data.grounded == GroundedState::Grounded && player_data.jumped.finished() {
+            velocity.y += player.jump_height;
             player_data.jumped.reset();
         }
         player_data.jumped.tick(Duration::from_secs_f32(time.delta_secs()));
