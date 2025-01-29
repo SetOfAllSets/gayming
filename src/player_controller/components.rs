@@ -53,7 +53,6 @@ pub struct PlayerData {
     pub ground_distance: Option<f32>,
     pub ground_height: Option<f32>,
     pub ground_normal: Option<Dir3>,
-    pub prev_pushed_down: bool,
     pub jumped: Timer,
 }
 
@@ -64,9 +63,8 @@ impl Default for PlayerData {
             ground_distance: None,
             ground_height: None,
             ground_normal: None,
-            prev_pushed_down: false,
             jumped: {
-                let mut timer = Timer::new(Duration::from_secs_f32(0.05), TimerMode::Once);
+                let mut timer = Timer::new(Duration::from_secs_f32(0.5), TimerMode::Once);
                 timer.tick(Duration::from_secs(5));
                 timer
             },

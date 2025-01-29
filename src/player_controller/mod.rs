@@ -14,7 +14,7 @@ impl Plugin for PlayerControllerPlugin {
         app.register_type::<Player>()
             .add_systems(Startup, (setup, grab_mouse))
             .add_systems(
-                PhysicsSchedule,
+                FixedUpdate,
                 (
                     ground_check,
                     (
@@ -23,13 +23,13 @@ impl Plugin for PlayerControllerPlugin {
                         rotate_player.ambiguous_with_all(),
                         rotate_camera.ambiguous_with_all(),
                         jump.ambiguous_with_all(),
+                        move_player.ambiguous_with_all(),
                     ),
                 )
                     .chain()
                     .after(PhysicsStepSet::Last),
             )
-            .add_systems(Update, grounded_debug)
-            .add_systems(Update, move_player.ambiguous_with_all());
+            .add_systems(Update, debug);
     }
 }
 
@@ -146,13 +146,19 @@ fn ground_check(mut query: Query<(&mut PlayerData, &ShapeHits, &RayHits, &Player
     }
 }
 
-fn grounded_debug(mut contexts: EguiContexts, query: Query<&PlayerData>) {
-    for player_data in &query {
+fn debug(mut contexts: EguiContexts, query: Query<(&PlayerData, &LinearVelocity)>) {
+    for (player_data, velocity) in &query {
         egui::Window::new("Grounded").show(contexts.ctx_mut(), |ui| {
             ui.label(format!(
                 "{:#?}\n\n{:#?}\n\n{:#?}",
                 player_data.grounded, player_data.ground_distance, player_data.ground_height
             ));
+        });
+        egui::Window::new("Jumping").show(contexts.ctx_mut(), |ui| {
+            ui.label(format!("{:#?}", player_data.jumped));
+        });
+        egui::Window::new("Speed").show(contexts.ctx_mut(), |ui| {
+            ui.label(format!("Speed: {}", velocity.0.length()));
         });
     }
 }
@@ -175,38 +181,17 @@ fn float_player(
     for (player, mut player_data, mut velocity, mut transform, mut gravity_scale) in &mut query {
         if !player_data.jumped.finished() {
             gravity_scale.0 = 1.0;
-            player_data.prev_pushed_down = false;
             return;
         }
         match player_data.ground_height {
             Some(ground_height) => {
-                let (float_height, pushed_down) = float_height(
-                    child_query.iter().next().unwrap(),
-                    &ground_height,
-                    &player.float_height,
-                    &(player.collider_height / 2.0 + player.collider_radius),
-                );
-                let target_height = ground_height + float_height;
+                let target_height = ground_height + player.float_height;
 
                 if transform.translation.y < target_height {
                     gravity_scale.0 = 0.0;
                     velocity.y = 0.0;
-                    if player_data.prev_pushed_down {
-                        if !pushed_down && player_data.prev_pushed_down {
-                            transform.translation.y = ((transform.translation.y * Vec3::Y)
-                                .move_towards(target_height * Vec3::Y, 10.0 * time.delta_secs()))
-                            .length();
-                            //TODO: rewrite to not do back and forth conversion to vec3
-                            if transform.translation.y == target_height {
-                                player_data.prev_pushed_down = false;
-                            }
-                        } else {
-                            transform.translation.y = target_height;
-                        }
-                    } else {
-                        transform.translation.y = target_height;
-                        player_data.prev_pushed_down = pushed_down;
-                    }
+
+                    transform.translation.y = target_height;
                 } else {
                     gravity_scale.0 = 0.0;
                     transform.translation.y = target_height;
@@ -214,32 +199,9 @@ fn float_player(
             }
             _ => {
                 gravity_scale.0 = 1.0;
-                player_data.prev_pushed_down = false;
             }
         }
     }
-}
-
-fn float_height(
-    hits: &ShapeHits,
-    ground_height: &f32,
-    float_height: &f32,
-    player_height: &f32,
-) -> (f32, bool) {
-    let target_height = ground_height + float_height;
-    for hit in hits.iter() {
-        if hit.point1.y >= target_height + player_height {
-            return (*float_height, false);
-        } else {
-            let mut float_distance = hit.point1.y - ground_height - player_height;
-            if float_distance < *player_height {
-                float_distance = *player_height;
-            }
-            return (float_distance, true);
-        }
-    }
-
-    (*float_height, false)
 }
 
 fn push_down_slopes(
@@ -270,6 +232,7 @@ fn move_player(
         &PlayerData,
     )>,
     keys: Res<ButtonInput<KeyCode>>,
+    time: Res<Time>,
 ) {
     for (player, mut external_force, transform, velocity, player_data) in &mut query {
         let mut movement = Vec3::ZERO;
@@ -278,25 +241,33 @@ fn move_player(
         if keys.pressed(KeyCode::KeyW) {
             movement += transform.forward().as_vec3();
             moving = true;
-        } else if player_data.grounded == GroundedState::Grounded && velocity.dot(transform.forward().as_vec3()) > 0.0 {
+        } else if player_data.grounded == GroundedState::Grounded
+            && velocity.dot(transform.forward().as_vec3()) > 0.0
+        {
             slowdown -= transform.forward().as_vec3()
         }
         if keys.pressed(KeyCode::KeyS) {
             movement += transform.back().as_vec3();
             moving = true;
-        } else if player_data.grounded == GroundedState::Grounded && velocity.dot(transform.back().as_vec3()) > 0.0 {
+        } else if player_data.grounded == GroundedState::Grounded
+            && velocity.dot(transform.back().as_vec3()) > 0.0
+        {
             slowdown -= transform.back().as_vec3()
         }
         if keys.pressed(KeyCode::KeyQ) {
             movement += transform.left().as_vec3();
             moving = true;
-        } else if player_data.grounded == GroundedState::Grounded && velocity.dot(transform.left().as_vec3()) > 0.0 {
+        } else if player_data.grounded == GroundedState::Grounded
+            && velocity.dot(transform.left().as_vec3()) > 0.0
+        {
             slowdown -= transform.left().as_vec3()
         }
         if keys.pressed(KeyCode::KeyD) {
             movement += transform.right().as_vec3();
             moving = true;
-        } else if player_data.grounded == GroundedState::Grounded && velocity.dot(transform.right().as_vec3()) > 0.0 {
+        } else if player_data.grounded == GroundedState::Grounded
+            && velocity.dot(transform.right().as_vec3()) > 0.0
+        {
             slowdown -= transform.right().as_vec3()
         }
         if player_data.grounded == GroundedState::Grounded {
@@ -346,19 +317,18 @@ fn rotate_camera(
 }
 
 fn jump(
-    mut query: Query<(
-        &mut LinearVelocity,
-        &mut PlayerData,
-        &Player
-    )>,
+    mut query: Query<(&mut LinearVelocity, &mut PlayerData, &Player)>,
     keys: Res<ButtonInput<KeyCode>>,
-    time: Res<Time>
+    time: Res<Time>,
 ) {
     for (mut velocity, mut player_data, player) in &mut query {
-        if keys.just_pressed(KeyCode::Space) && player_data.grounded == GroundedState::Grounded && player_data.jumped.finished() {
+        if keys.pressed(KeyCode::Space)
+            && player_data.grounded == GroundedState::Grounded
+            && player_data.jumped.finished()
+        {
             velocity.y += player.jump_height;
             player_data.jumped.reset();
         }
-        player_data.jumped.tick(Duration::from_secs_f32(time.delta_secs()));
+        player_data.jumped.tick(time.delta());
     }
 }
