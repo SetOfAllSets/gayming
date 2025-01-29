@@ -18,7 +18,8 @@ pub struct Player {
     pub collider_height: f32,
     pub collider_radius: f32,
     pub max_slope_degrees: f32,
-    pub float_height: f32,
+    pub stand_height: f32,
+    pub crouch_height: f32,
     pub grounded_speed: f32,
     pub airborne_sped: f32,
     pub horizontal_camera_sensitivity: f32,
@@ -34,7 +35,8 @@ impl Default for Player {
             collider_height: 2.0,
             collider_radius: 2.0,
             max_slope_degrees: 0.75,
-            float_height: 2.0,
+            stand_height: 2.0,
+            crouch_height: 1.0,
             grounded_speed: 15.0,
             airborne_sped: 7.5,
             horizontal_camera_sensitivity: 0.05,
@@ -54,6 +56,7 @@ pub struct PlayerData {
     pub ground_height: Option<f32>,
     pub ground_normal: Option<Dir3>,
     pub jumped: Timer,
+    pub crouching: bool,
 }
 
 impl Default for PlayerData {
@@ -68,6 +71,7 @@ impl Default for PlayerData {
                 timer.tick(Duration::from_secs(5));
                 timer
             },
+            crouching: false,
         }
     }
 }

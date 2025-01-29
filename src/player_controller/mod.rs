@@ -1,6 +1,5 @@
-use std::time::Duration;
-
 use avian3d::prelude::*;
+use bevy::math::VectorSpace;
 use bevy::prelude::*;
 use bevy::{input::mouse::MouseMotion, window::CursorGrabMode};
 use bevy_egui::{EguiContexts, egui};
@@ -24,6 +23,7 @@ impl Plugin for PlayerControllerPlugin {
                         rotate_camera.ambiguous_with_all(),
                         jump.ambiguous_with_all(),
                         move_player.ambiguous_with_all(),
+                        crouch.ambiguous_with_all(),
                     ),
                 )
                     .chain()
@@ -41,10 +41,9 @@ fn setup(world: &mut World) {
             world.commands().entity(entity).insert({
                 let rigid_body = RigidBody::Dynamic;
                 let collider = Collider::capsule(player.collider_radius, player.collider_height);
-                let shape_caster_origin = Vec3::ZERO.with_y(player.collider_height / 2.0);
                 let shape_caster = ShapeCaster::new(
                     Sphere::new(player.collider_radius * 0.95),
-                    shape_caster_origin,
+                    Vec3::ZERO,
                     Quat::default(),
                     Dir3::NEG_Y,
                 );
@@ -81,7 +80,8 @@ fn setup(world: &mut World) {
                 .entity(entity)
                 .add_children(&[collider_child]);
 
-            let child_camera = Camera3d::default();
+            let mut child_camera = Camera::default();
+            child_camera.is_active = false;
             let child_projection = Projection::from(PerspectiveProjection {
                 fov: player.fov.to_radians(),
                 ..default()
@@ -118,7 +118,7 @@ fn ground_check(mut query: Query<(&mut PlayerData, &ShapeHits, &RayHits, &Player
             height = Some(hit.distance);
             hit_point = Some(transform.translation - Vec3::Y * height.unwrap());
         }
-        if !(height.is_some() && height.unwrap() <= player.float_height) {
+        if !(height.is_some() && height.unwrap() <= player.stand_height) {
             for &hit in shape_hits.iter() {
                 normal = Some(hit.normal1.try_into().unwrap());
                 ground_angle = Some(hit.normal1.angle_between(Vec3::Y).to_degrees());
@@ -127,7 +127,10 @@ fn ground_check(mut query: Query<(&mut PlayerData, &ShapeHits, &RayHits, &Player
             }
         }
         // + 0.2 allows us to stay glued to ramps
-        if height.is_some() && height.unwrap() <= player.float_height + 0.2 {
+        if height.is_some()
+            && height.unwrap() - (player.collider_radius + player.collider_height / 2.0)
+                <= player.stand_height + 0.2
+        {
             //it's just innaccurate sometimes idk
             if ground_angle.unwrap() <= player.max_slope_degrees + 0.1 {
                 player_data.grounded = GroundedState::Grounded;
@@ -178,14 +181,16 @@ fn float_player(
     time: Res<Time>,
 ) {
     //TODO: Flatten this funcion and generally make it less of an eyesore
-    for (player, mut player_data, mut velocity, mut transform, mut gravity_scale) in &mut query {
+    for (player, player_data, mut velocity, mut transform, mut gravity_scale) in &mut query {
         if !player_data.jumped.finished() {
             gravity_scale.0 = 1.0;
             return;
         }
         match player_data.ground_height {
             Some(ground_height) => {
-                let target_height = ground_height + player.float_height;
+                let target_height = ground_height
+                    + player.stand_height
+                    + (player.collider_radius + player.collider_height / 2.0);
 
                 if transform.translation.y < target_height {
                     gravity_scale.0 = 0.0;
@@ -229,12 +234,11 @@ fn move_player(
         &mut ExternalForce,
         &Transform,
         &LinearVelocity,
-        &PlayerData,
+        &mut PlayerData,
     )>,
     keys: Res<ButtonInput<KeyCode>>,
-    time: Res<Time>,
 ) {
-    for (player, mut external_force, transform, velocity, player_data) in &mut query {
+    for (player, mut external_force, transform, velocity, mut player_data) in &mut query {
         let mut movement = Vec3::ZERO;
         let mut slowdown = Vec3::ZERO;
         let mut moving = false;
@@ -274,15 +278,22 @@ fn move_player(
             movement = movement.normalize_or_zero() * player.grounded_speed;
             movement += slowdown.normalize_or_zero() * player.ground_friction;
             movement = movement.reject_from(player_data.ground_normal.unwrap().as_vec3());
-            /*if !moving {
-                movement = Vec3::new(velocity.0.x, 0.0, velocity.0.z).normalize_or_zero() * -1.0
+            if !moving {
+                movement = Vec3::new(velocity.0.x, 0.0, velocity.0.z).normalize_or_zero()
+                    * -1.0
                     * player.ground_friction;
-            }*/
+            }
         } else {
             movement = movement.normalize_or_zero() * player.airborne_sped;
         }
 
         external_force.apply_force(movement);
+
+        if keys.pressed(KeyCode::KeyC) {
+            player_data.crouching = true;
+        } else {
+            player_data.crouching = false;
+        }
     }
 }
 
@@ -330,5 +341,32 @@ fn jump(
             player_data.jumped.reset();
         }
         player_data.jumped.tick(time.delta());
+    }
+}
+
+fn crouch(
+    mut query: Query<(&PlayerData, &mut Collider, &Player), Without<PlayerShapeCasterChild>>,
+    mut child_query: Query<&mut ShapeCaster, With<PlayerShapeCasterChild>>,
+) {
+    for (player_data, mut collider, player) in &mut query {
+        for mut shape_caster in &mut child_query {
+            if player_data.crouching {
+                *collider = Collider::capsule(player.collider_radius, player.crouch_height);
+                *shape_caster = ShapeCaster::new(
+                    Collider::capsule(player.collider_radius * 0.95, player.crouch_height),
+                    Vec3::ZERO,
+                    Quat::default(),
+                    Dir3::Y,
+                );
+            } else {
+                *collider = Collider::capsule(player.collider_radius, player.collider_height);
+                *shape_caster = ShapeCaster::new(
+                    Collider::capsule(player.collider_radius * 0.95, player.collider_height),
+                    Vec3::ZERO,
+                    Quat::default(),
+                    Dir3::Y,
+                );
+            }
+        }
     }
 }
