@@ -1,19 +1,9 @@
 use std::time::Duration;
 
-use avian3d::prelude::*;
 use bevy::prelude::*;
 
 #[derive(Component, Reflect, Clone)]
 #[reflect(Component, Default)]
-#[require(
-    PlayerData,
-    RigidBody,
-    Collider,
-    ShapeCaster,
-    LockedAxes,
-    ExternalForce,
-    GravityScale
-)]
 pub struct Player {
     pub collider_height: f32,
     pub collider_radius: f32,
@@ -21,7 +11,7 @@ pub struct Player {
     pub stand_height: f32,
     pub crouch_height: f32,
     pub grounded_speed: f32,
-    pub airborne_sped: f32,
+    pub airborne_speed: f32,
     pub horizontal_camera_sensitivity: f32,
     pub vertical_camera_sensitivity: f32,
     pub fov: f32,
@@ -38,7 +28,7 @@ impl Default for Player {
             stand_height: 2.0,
             crouch_height: 1.0,
             grounded_speed: 15.0,
-            airborne_sped: 7.5,
+            airborne_speed: 7.5,
             horizontal_camera_sensitivity: 0.05,
             vertical_camera_sensitivity: 0.01,
             fov: 90.0,
@@ -78,24 +68,16 @@ impl Default for PlayerData {
 
 #[derive(Component, Reflect)]
 #[reflect(Component, Default)]
-pub struct PlayerShapeCasterChild;
-
-impl Default for PlayerShapeCasterChild {
-    fn default() -> Self {
-        PlayerShapeCasterChild
-    }
-}
-
-#[derive(Component, Reflect)]
-#[reflect(Component, Default)]
 pub struct PlayerCameraChild {
     pub pitch: f32,
+    pub distance: f32,
 }
 
 impl Default for PlayerCameraChild {
     fn default() -> Self {
         PlayerCameraChild {
-            pitch: 90f32.to_radians(),
+            pitch: 0.0,
+            distance: 2.0,
         }
     }
 }
@@ -110,4 +92,14 @@ pub enum GroundedState {
 pub enum UngroundedReason {
     Airborne,
     SteepSlope,
+}
+
+#[derive(Component, Reflect)]
+#[reflect(Component, Default)]
+pub struct PlayerFloorAttatchmentChild;
+
+impl Default for PlayerFloorAttatchmentChild {
+    fn default() -> Self {
+        PlayerFloorAttatchmentChild
+    }
 }

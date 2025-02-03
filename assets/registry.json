@@ -20261,7 +20261,7 @@
       "isResource": false,
       "long_name": "gayming::player_controller::components::Player",
       "properties": {
-        "airborne_sped": {
+        "airborne_speed": {
           "type": {
             "$ref": "#/$defs/f32"
           }
@@ -20329,7 +20329,7 @@
         "stand_height",
         "crouch_height",
         "grounded_speed",
-        "airborne_sped",
+        "airborne_speed",
         "horizontal_camera_sensitivity",
         "vertical_camera_sensitivity",
         "fov",
