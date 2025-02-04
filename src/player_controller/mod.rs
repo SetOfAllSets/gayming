@@ -103,14 +103,15 @@ fn move_with_ground(
     world: &mut World,
     system_state: &mut SystemState<(
         Query<&RayHits, With<PlayerFloorAttatchmentChild>>,
-        Query<(Entity, &mut AngularVelocity), With<Player>>,
-    )>,
+        Query<(&mut ExternalImpulse, &mut ComputedMass), With<Player>>,
+        Res<Time>
+    )>
 ) {
     let mut floor_linear_velocity = Vec3::ZERO;
     let mut floor_angular_velocity = Vec3::ZERO;
     let mut hit_entity = Option::<Entity>::None;
     {
-        let (ray_query, mut player_query) = system_state.get_mut(world);
+        let (ray_query, mut player_query, time) = system_state.get_mut(world);
         for hits in &ray_query {
             for hit in hits.iter() {
                 hit_entity = Some(hit.entity);
@@ -131,12 +132,11 @@ fn move_with_ground(
     }
     let mut player_entity = Option::<Entity>::None;
     {
-        let (mut ray_query, mut player_query) = system_state.get_mut(world);
-        for (mut entity, mut angular_velocity) in &mut player_query {
+        let (mut ray_query, mut player_query, time) = system_state.get_mut(world);
+        for (mut external_force, mut mass) in &mut player_query {
             //linear_velocity.0 += floor_linear_velocity;
             //angular_velocity.0 += floor_angular_velocity;
-            //linear_velocity.apply_force(floor_linear_velocity);
-            player_entity = Some(entity);
+            external_force.apply_impulse(floor_linear_velocity * mass.value() * time.delta_secs());
         }
     }
     if hit_entity.is_some() && player_entity.is_some() {
@@ -144,11 +144,18 @@ fn move_with_ground(
             .commands()
             .entity(hit_entity.unwrap())
             .add_child(player_entity.unwrap());
+        println!("shit");
     } else if player_entity.is_some() {
-        world
+        let parent = world.get::<Parent>(player_entity.unwrap());
+        println!("shat");
+        if parent.is_some() {
+            let parent = parent.unwrap().get();
+            println!("shot");
+            world
             .commands()
-            .entity(hit_entity.unwrap())
+            .entity(parent)
             .remove_children(&[player_entity.unwrap()]);
+        }
     }
 }
 

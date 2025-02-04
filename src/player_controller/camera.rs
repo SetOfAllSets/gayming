@@ -1,8 +1,5 @@
 use crate::player_controller::*;
-use bevy::{
-    input::mouse::{MouseMotion, MouseWheel},
-    prelude::*,
-};
+use bevy::input::mouse::{MouseMotion, MouseWheel};
 
 pub fn move_camera(
     mut query: Query<(&mut PlayerCameraChild, &mut Transform)>,
