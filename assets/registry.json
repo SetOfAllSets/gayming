@@ -20255,6 +20255,17 @@
       "type": "object",
       "typeInfo": "Struct"
     },
+    "gayming::player_controller::components::MovingPlatform": {
+      "additionalProperties": false,
+      "isComponent": true,
+      "isResource": false,
+      "long_name": "gayming::player_controller::components::MovingPlatform",
+      "properties": {},
+      "required": [],
+      "short_name": "MovingPlatform",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
     "gayming::player_controller::components::Player": {
       "additionalProperties": false,
       "isComponent": true,

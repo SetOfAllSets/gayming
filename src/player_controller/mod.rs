@@ -11,10 +11,19 @@ pub struct PlayerControllerPlugin;
 impl Plugin for PlayerControllerPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<Player>()
+            .register_type::<MovingPlatform>()
             .add_systems(Startup, setup)
             .add_systems(Update, (camera::move_camera, camera::rotate_player))
             .add_systems(FixedUpdate, move_player)
-            .add_systems(PhysicsSchedule, move_with_ground.after(PhysicsStepSet::Last).ambiguous_with_all());
+            .add_systems(
+                PhysicsSchedule,
+                (
+                    move_with_ground.ambiguous_with_all(),
+                    move_platform.ambiguous_with_all(),
+                )
+                    .after(PhysicsStepSet::Last)
+                    .ambiguous_with_all(),
+            );
     }
 }
 
@@ -50,7 +59,8 @@ fn setup(world: &mut World) {
                 Vec3::ZERO.with_y(0.0 - player.collider_height / 2.0 - player.collider_radius),
                 Dir3::NEG_Y,
             )
-            .with_max_distance(0.0).with_query_filter(SpatialQueryFilter::from_excluded_entities([entity]));
+            .with_max_distance(0.0)
+            .with_query_filter(SpatialQueryFilter::from_excluded_entities([entity]));
             let floor_caster_parent = world
                 .commands()
                 .spawn(PlayerFloorAttatchmentChild::default())
@@ -93,14 +103,14 @@ fn move_with_ground(
     world: &mut World,
     system_state: &mut SystemState<(
         Query<&RayHits, With<PlayerFloorAttatchmentChild>>,
-        Query<(&mut LinearVelocity, &mut AngularVelocity), With<Player>>,
+        Query<(Entity, &mut AngularVelocity), With<Player>>,
     )>,
 ) {
     let mut floor_linear_velocity = Vec3::ZERO;
     let mut floor_angular_velocity = Vec3::ZERO;
     let mut hit_entity = Option::<Entity>::None;
     {
-        let (mut ray_query, mut player_query) = system_state.get_mut(world);
+        let (ray_query, mut player_query) = system_state.get_mut(world);
         for hits in &ray_query {
             for hit in hits.iter() {
                 hit_entity = Some(hit.entity);
@@ -119,13 +129,34 @@ fn move_with_ground(
             }
         }
     }
-    let (mut ray_query, mut player_query) = system_state.get_mut(world);
-    for (mut linear_velocity, mut angular_velocity) in &mut player_query {
-        linear_velocity.0 += floor_linear_velocity;
-        angular_velocity.0 += floor_angular_velocity;
+    let mut player_entity = Option::<Entity>::None;
+    {
+        let (mut ray_query, mut player_query) = system_state.get_mut(world);
+        for (mut entity, mut angular_velocity) in &mut player_query {
+            //linear_velocity.0 += floor_linear_velocity;
+            //angular_velocity.0 += floor_angular_velocity;
+            //linear_velocity.apply_force(floor_linear_velocity);
+            player_entity = Some(entity);
+        }
+    }
+    if hit_entity.is_some() && player_entity.is_some() {
+        world
+            .commands()
+            .entity(hit_entity.unwrap())
+            .add_child(player_entity.unwrap());
+    } else if player_entity.is_some() {
+        world
+            .commands()
+            .entity(hit_entity.unwrap())
+            .remove_children(&[player_entity.unwrap()]);
     }
 }
 
+fn move_platform(mut query: Query<&mut LinearVelocity, With<MovingPlatform>>) {
+    for mut velocity in &mut query {
+        velocity.0.z = 10.0;
+    }
+}
 
 /*
 Make a moving platform to test that it actually moves w/ it :3

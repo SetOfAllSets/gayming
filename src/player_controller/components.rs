@@ -103,3 +103,13 @@ impl Default for PlayerFloorAttatchmentChild {
         PlayerFloorAttatchmentChild
     }
 }
+
+#[derive(Component, Reflect)]
+#[reflect(Component, Default)]
+pub struct MovingPlatform;
+
+impl Default for MovingPlatform {
+    fn default() -> Self {
+        MovingPlatform
+    }
+}
