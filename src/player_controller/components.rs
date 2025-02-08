@@ -47,6 +47,8 @@ pub struct PlayerData {
     pub ground_normal: Option<Dir3>,
     pub jumped: Timer,
     pub crouching: bool,
+    pub last_velocity: Vec3,
+    pub movement_velocity: Vec3,
 }
 
 impl Default for PlayerData {
@@ -62,6 +64,8 @@ impl Default for PlayerData {
                 timer
             },
             crouching: false,
+            last_velocity: Vec3::default(),
+            movement_velocity: Vec3::default(),
         }
     }
 }
