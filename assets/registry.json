@@ -12120,6 +12120,19 @@
       "type": "object",
       "typeInfo": "Struct"
     },
+    "bevy_picking::focus::PickingInteraction": {
+      "isComponent": true,
+      "isResource": false,
+      "long_name": "bevy_picking::focus::PickingInteraction",
+      "oneOf": [
+        "Pressed",
+        "Hovered",
+        "None"
+      ],
+      "short_name": "PickingInteraction",
+      "type": "string",
+      "typeInfo": "Enum"
+    },
     "bevy_picking::input::PointerInputPlugin": {
       "additionalProperties": false,
       "isComponent": false,
@@ -13261,7 +13274,7 @@
       "typeInfo": "TupleStruct"
     },
     "bevy_scene::components::DynamicSceneRoot": {
-      "isComponent": false,
+      "isComponent": true,
       "isResource": false,
       "items": false,
       "long_name": "bevy_scene::components::DynamicSceneRoot",
@@ -13277,7 +13290,7 @@
       "typeInfo": "TupleStruct"
     },
     "bevy_scene::components::SceneRoot": {
-      "isComponent": false,
+      "isComponent": true,
       "isResource": false,
       "items": false,
       "long_name": "bevy_scene::components::SceneRoot",
@@ -19661,6 +19674,33 @@
       "type": "object",
       "typeInfo": "Enum"
     },
+    "core::option::Option<bevy_math::direction::Dir3>": {
+      "isComponent": false,
+      "isResource": false,
+      "long_name": "core::option::Option<bevy_math::direction::Dir3>",
+      "oneOf": [
+        {
+          "long_name": "None"
+        },
+        {
+          "items": false,
+          "long_name": "Some",
+          "prefixItems": [
+            {
+              "type": {
+                "$ref": "#/$defs/bevy_math::direction::Dir3"
+              }
+            }
+          ],
+          "short_name": "Some",
+          "type": "array",
+          "typeInfo": "Tuple"
+        }
+      ],
+      "short_name": "Option<Dir3>",
+      "type": "object",
+      "typeInfo": "Enum"
+    },
     "core::option::Option<bevy_math::rects::rect::Rect>": {
       "isComponent": false,
       "isResource": false,
@@ -19793,6 +19833,33 @@
         }
       ],
       "short_name": "Option<TextureAtlas>",
+      "type": "object",
+      "typeInfo": "Enum"
+    },
+    "core::option::Option<bevy_transform::components::transform::Transform>": {
+      "isComponent": false,
+      "isResource": false,
+      "long_name": "core::option::Option<bevy_transform::components::transform::Transform>",
+      "oneOf": [
+        {
+          "long_name": "None"
+        },
+        {
+          "items": false,
+          "long_name": "Some",
+          "prefixItems": [
+            {
+              "type": {
+                "$ref": "#/$defs/bevy_transform::components::transform::Transform"
+              }
+            }
+          ],
+          "short_name": "Some",
+          "type": "array",
+          "typeInfo": "Tuple"
+        }
+      ],
+      "short_name": "Option<Transform>",
       "type": "object",
       "typeInfo": "Enum"
     },
@@ -20255,6 +20322,33 @@
       "type": "object",
       "typeInfo": "Struct"
     },
+    "gayming::player_controller::components::GroundedState": {
+      "isComponent": false,
+      "isResource": false,
+      "long_name": "gayming::player_controller::components::GroundedState",
+      "oneOf": [
+        {
+          "long_name": "Grounded"
+        },
+        {
+          "items": false,
+          "long_name": "Ungrounded",
+          "prefixItems": [
+            {
+              "type": {
+                "$ref": "#/$defs/gayming::player_controller::components::UngroundedReason"
+              }
+            }
+          ],
+          "short_name": "Ungrounded",
+          "type": "array",
+          "typeInfo": "Tuple"
+        }
+      ],
+      "short_name": "GroundedState",
+      "type": "object",
+      "typeInfo": "Enum"
+    },
     "gayming::player_controller::components::MovingPlatform": {
       "additionalProperties": false,
       "isComponent": true,
@@ -20350,6 +20444,98 @@
       "short_name": "Player",
       "type": "object",
       "typeInfo": "Struct"
+    },
+    "gayming::player_controller::components::PlayerData": {
+      "additionalProperties": false,
+      "isComponent": true,
+      "isResource": false,
+      "long_name": "gayming::player_controller::components::PlayerData",
+      "properties": {
+        "crouching": {
+          "type": {
+            "$ref": "#/$defs/bool"
+          }
+        },
+        "floor_angular_velocity": {
+          "type": {
+            "$ref": "#/$defs/glam::Vec3"
+          }
+        },
+        "floor_entity": {
+          "type": {
+            "$ref": "#/$defs/core::option::Option<bevy_ecs::entity::Entity>"
+          }
+        },
+        "floor_linear_velocity": {
+          "type": {
+            "$ref": "#/$defs/glam::Vec3"
+          }
+        },
+        "ground_distance": {
+          "type": {
+            "$ref": "#/$defs/core::option::Option<f32>"
+          }
+        },
+        "ground_height": {
+          "type": {
+            "$ref": "#/$defs/core::option::Option<f32>"
+          }
+        },
+        "ground_normal": {
+          "type": {
+            "$ref": "#/$defs/core::option::Option<bevy_math::direction::Dir3>"
+          }
+        },
+        "grounded": {
+          "type": {
+            "$ref": "#/$defs/gayming::player_controller::components::GroundedState"
+          }
+        },
+        "jumped": {
+          "type": {
+            "$ref": "#/$defs/bevy_time::timer::Timer"
+          }
+        },
+        "last_floor_transform": {
+          "type": {
+            "$ref": "#/$defs/core::option::Option<bevy_transform::components::transform::Transform>"
+          }
+        },
+        "last_unsimulated_velocity": {
+          "type": {
+            "$ref": "#/$defs/glam::Vec3"
+          }
+        },
+        "movement_linear_velocity": {
+          "type": {
+            "$ref": "#/$defs/glam::Vec3"
+          }
+        }
+      },
+      "required": [
+        "grounded",
+        "jumped",
+        "crouching",
+        "last_unsimulated_velocity",
+        "movement_linear_velocity",
+        "floor_linear_velocity",
+        "floor_angular_velocity"
+      ],
+      "short_name": "PlayerData",
+      "type": "object",
+      "typeInfo": "Struct"
+    },
+    "gayming::player_controller::components::UngroundedReason": {
+      "isComponent": false,
+      "isResource": false,
+      "long_name": "gayming::player_controller::components::UngroundedReason",
+      "oneOf": [
+        "Airborne",
+        "SteepSlope"
+      ],
+      "short_name": "UngroundedReason",
+      "type": "string",
+      "typeInfo": "Enum"
     },
     "glam::Affine2": {
       "additionalProperties": false,

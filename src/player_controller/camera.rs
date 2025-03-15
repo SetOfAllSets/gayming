@@ -32,14 +32,16 @@ pub fn move_camera(
 }
 
 pub fn rotate_player(
-    mut query: Query<(&mut Transform, &Player)>,
+    mut query: Query<(&mut AngularVelocity, &Player)>,
     mut movement: EventReader<MouseMotion>,
+    time: Res<Time>,
 ) {
-    for (mut transform, player) in &mut query {
+    for (mut angular_velocity, player) in &mut query {
         for movement in movement.read() {
-            transform.rotate(Quat::from_rotation_y(
-                -1.0 * movement.delta.x * player.horizontal_camera_sensitivity,
-            ));
+            angular_velocity.x = 0.0;
+            angular_velocity.z = 0.0;
+            angular_velocity.y =
+                -1.0 * movement.delta.x * player.horizontal_camera_sensitivity / time.delta_secs();
         }
     }
 }

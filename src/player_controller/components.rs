@@ -47,8 +47,12 @@ pub struct PlayerData {
     pub ground_normal: Option<Dir3>,
     pub jumped: Timer,
     pub crouching: bool,
-    pub last_velocity: Vec3,
-    pub movement_velocity: Vec3,
+    pub last_unsimulated_velocity: Vec3,
+    pub movement_linear_velocity: Vec3,
+    pub last_floor_transform: Option<Transform>,
+    pub floor_linear_velocity: Vec3,
+    pub floor_angular_velocity: Vec3,
+    pub floor_entity: Option<Entity>,
 }
 
 impl Default for PlayerData {
@@ -64,8 +68,12 @@ impl Default for PlayerData {
                 timer
             },
             crouching: false,
-            last_velocity: Vec3::default(),
-            movement_velocity: Vec3::default(),
+            last_unsimulated_velocity: Vec3::ZERO,
+            movement_linear_velocity: Vec3::ZERO,
+            last_floor_transform: None,
+            floor_linear_velocity: Vec3::ZERO,
+            floor_angular_velocity: Vec3::ZERO,
+            floor_entity: None,
         }
     }
 }
@@ -100,11 +108,11 @@ pub enum UngroundedReason {
 
 #[derive(Component, Reflect)]
 #[reflect(Component, Default)]
-pub struct PlayerFloorAttatchmentChild;
+pub struct PlayerFloorCaster;
 
-impl Default for PlayerFloorAttatchmentChild {
+impl Default for PlayerFloorCaster {
     fn default() -> Self {
-        PlayerFloorAttatchmentChild
+        PlayerFloorCaster
     }
 }
 
